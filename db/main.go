@@ -3,7 +3,7 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
-	"fmt"
+	// "fmt"
 	"github.com/joho/godotenv"
 	"github.com/oklog/ulid"
 	"log"
