@@ -38,12 +38,16 @@ func init() {
 		log.Fatal("環境変数 MYSQL_USER が設定されていません")
 	}
 	mysqlUserPwd := os.Getenv("MYSQL_PASSWORD")
-	if mysqlUser == "" {
+	if mysqlUserPwd == "" {
 		log.Fatal("環境変数 MYSQL_PASSWORD が設定されていません")
 	}
 	mysqlDatabase := os.Getenv("MYSQL_DATABASE")
-	if mysqlUser == "" {
+	if mysqlDatabase == "" {
 		log.Fatal("環境変数 MYSQL_DATABASE が設定されていません")
+	}
+	mysqlHost := os.Getenv("MYSQL_HOST")
+	if mysqlHost == "" {
+		log.Fatal("環境変数 MYSQL_HOST が設定されていません")
 	}
 
 	// ①-2
