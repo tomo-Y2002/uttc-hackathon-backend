@@ -37,23 +37,23 @@ func init() {
 	if err != nil {
 		log.Fatal("エラー")
 	}
-	// ①-1
-	mysqlUser := os.Getenv("MYSQL_USER")
-	if mysqlUser == "" {
-		log.Fatal("環境変数 MYSQL_USER が設定されていません")
-	}
-	mysqlUserPwd := os.Getenv("MYSQL_PASSWORD")
-	if mysqlUserPwd == "" {
-		log.Fatal("環境変数 MYSQL_PASSWORD が設定されていません")
-	}
-	mysqlDatabase := os.Getenv("MYSQL_DATABASE")
-	if mysqlDatabase == "" {
-		log.Fatal("環境変数 MYSQL_DATABASE が設定されていません")
-	}
-	mysqlHost := os.Getenv("MYSQL_HOST")
-	if mysqlHost == "" {
-		log.Fatal("環境変数 MYSQL_HOST が設定されていません")
-	}
+	// // ①-1
+	// mysqlUser := os.Getenv("MYSQL_USER")
+	// if mysqlUser == "" {
+	// 	log.Fatal("環境変数 MYSQL_USER が設定されていません")
+	// }
+	// mysqlUserPwd := os.Getenv("MYSQL_PASSWORD")
+	// if mysqlUserPwd == "" {
+	// 	log.Fatal("環境変数 MYSQL_PASSWORD が設定されていません")
+	// }
+	// mysqlDatabase := os.Getenv("MYSQL_DATABASE")
+	// if mysqlDatabase == "" {
+	// 	log.Fatal("環境変数 MYSQL_DATABASE が設定されていません")
+	// }
+	// mysqlHost := os.Getenv("MYSQL_HOST")
+	// if mysqlHost == "" {
+	// 	log.Fatal("環境変数 MYSQL_HOST が設定されていません")
+	// }
 
 	// // ①-2
 	// dsn := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s", mysqlUser, mysqlUserPwd, mysqlHost, mysqlDatabase)
