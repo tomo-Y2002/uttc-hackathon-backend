@@ -55,17 +55,17 @@ func init() {
 		log.Fatal("環境変数 MYSQL_HOST が設定されていません")
 	}
 
-	// ①-2
-	dsn := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s", mysqlUser, mysqlUserPwd, mysqlHost, mysqlDatabase)
-	_db, err := sql.Open("mysql", dsn)
-	if err != nil {
-		log.Fatalf("fail: sql.Open, %v\n", err)
-	}
-	// ①-3
-	if err := _db.Ping(); err != nil {
-		log.Fatalf("fail: _db.Ping, %v\n", err)
-	}
-	db = _db
+	// // ①-2
+	// dsn := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s", mysqlUser, mysqlUserPwd, mysqlHost, mysqlDatabase)
+	// _db, err := sql.Open("mysql", dsn)
+	// if err != nil {
+	// 	log.Fatalf("fail: sql.Open, %v\n", err)
+	// }
+	// // ①-3
+	// if err := _db.Ping(); err != nil {
+	// 	log.Fatalf("fail: _db.Ping, %v\n", err)
+	// }
+	// db = _db
 }
 
 // ② /userでリクエストされたらnameパラメーターと一致する名前を持つレコードをJSON形式で返す
