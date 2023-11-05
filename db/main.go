@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	// "fmt"
-	"github.com/joho/godotenv"
+	// "github.com/joho/godotenv"
 	"github.com/oklog/ulid"
 	"log"
 	"math/rand"
@@ -33,10 +33,10 @@ type UserResForHTTPPost struct {
 var db *sql.DB
 
 func init() {
-	err := godotenv.Load("../.env")
-	if err != nil {
-		log.Fatal("エラー")
-	}
+	// err := godotenv.Load("../.env")
+	// if err != nil {
+	// 	log.Fatal("エラー")
+	// }
 	// // ①-1
 	// mysqlUser := os.Getenv("MYSQL_USER")
 	// if mysqlUser == "" {
