@@ -184,9 +184,15 @@ func main() {
 	// ③ Ctrl+CでHTTPサーバー停止時にDBをクローズする
 	closeDBWithSysCall()
 
+	// PORTで待ち受ける
+	port := os.Getenv("PORT")
+	if port == "" {
+		log.Fatal("環境変数 PORT が設定されていません")
+	}
+	
 	// 8000番ポートでリクエストを待ち受ける
 	log.Println("Listening...")
-	if err := http.ListenAndServe(":8080", nil); err != nil {
+	if err := http.ListenAndServe(":" + port, nil); err != nil {
 		log.Fatal(err)
 	}
 }
