@@ -27,6 +27,17 @@ type UserResForHTTPPost struct {
 	Name string    `json:"name"`
 	Age  int       `json:"age"`
 }
+type ItemResForHTTPGet struct {
+	ItemID      int       `json:"itemId"`
+	UserID      int       `json:"userId,omitempty"`
+	CategoryID  int       `json:"categoryId,omitempty"`
+	ChapterID   int       `json:"chapterId,omitempty"`
+	Title       string    `json:"title"`
+	Description string    `json:"description,omitempty"`
+	Content     string    `json:"content,omitempty"`
+	CreatedAt   time.Time `json:"createdAt"`
+	UpdatedAt   time.Time `json:"updatedAt"`
+}
 
 // ① GoプログラムからMySQLへ接続
 var db *sql.DB
@@ -51,7 +62,7 @@ func init() {
 	}
 
 	// ①-2
-	dsn := fmt.Sprintf("%s:%s@%s/%s", mysqlUser, mysqlUserPwd, mysqlHost, mysqlDatabase)
+	dsn := fmt.Sprintf("%s:%s@%s/%s?parseTime=True", mysqlUser, mysqlUserPwd, mysqlHost, mysqlDatabase)
 	_db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		log.Fatalf("fail: sql.Open, %v\n", err)
@@ -64,7 +75,11 @@ func init() {
 }
 
 func handlerUser(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "https://uttc-hackathon-frontend-chi.vercel.app")
+	frontEndpoint := os.Getenv("FRONT_ENDPOINT")
+	if frontEndpoint == "" {
+		log.Fatal("環境変数 FRONT_ENDPOINT が設定されていません")
+	}
+	w.Header().Set("Access-Control-Allow-Origin", frontEndpoint)
 	w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 	switch r.Method {
@@ -185,7 +200,11 @@ func handlerUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func handlerUsers(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "https://uttc-hackathon-frontend-chi.vercel.app")
+	frontEndpoint := os.Getenv("FRONT_ENDPOINT")
+	if frontEndpoint == "" {
+		log.Fatal("環境変数 FRONT_ENDPOINT が設定されていません")
+	}
+	w.Header().Set("Access-Control-Allow-Origin", frontEndpoint)
 	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 	switch r.Method {
@@ -234,11 +253,72 @@ func handlerUsers(w http.ResponseWriter, r *http.Request) {
 	}
 
 }
+func handlerItems(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+	switch r.Method {
+	case http.MethodOptions:
+		w.WriteHeader(http.StatusNoContent)
+		return
+	case http.MethodGet:
+		// userテーブルのすべての要素を取得する
+		rows, err := db.Query("SELECT * FROM Items")
+		if err != nil {
+			log.Printf("fail: db.Query, %v\n", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		// ②-3
+		items := make([]ItemResForHTTPGet, 0)
+		for rows.Next() {
+			var item ItemResForHTTPGet
+			if err := rows.Scan(
+				&item.ItemID,
+				&item.UserID,
+				&item.CategoryID,
+				&item.ChapterID,
+				&item.Title,
+				&item.Description,
+				&item.Content,
+				&item.CreatedAt,
+				&item.UpdatedAt,
+			); err != nil {
+				log.Printf("fail: rows.Scan, %v\n", err)
+
+				if err := rows.Close(); err != nil { // 500を返して終了するが、その前にrowsのClose処理が必要
+					log.Printf("fail: rows.Close(), %v\n", err)
+				}
+				w.WriteHeader(http.StatusInternalServerError)
+				return
+			}
+			items = append(items, item)
+		}
+
+		// ②-4
+		bytes, err := json.Marshal(items)
+		if err != nil {
+			log.Printf("fail: json.Marshal, %v\n", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(bytes)
+
+	default:
+		log.Printf("fail: HTTP Method is %s\n", r.Method)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+}
 
 func main() {
 	// ② /userでリクエストされたらPostかGetで動作を変更する
 	http.HandleFunc("/user", handlerUser)
 	http.HandleFunc("/users", handlerUsers)
+	http.HandleFunc("/items", handlerItems)
 
 	// ③ Ctrl+CでHTTPサーバー停止時にDBをクローズする
 	closeDBWithSysCall()
@@ -248,10 +328,10 @@ func main() {
 	if port == "" {
 		log.Fatal("環境変数 PORT が設定されていません")
 	}
-	
-	// 8000番ポートでリクエストを待ち受ける
+
+	// 8080番ポートでリクエストを待ち受ける
 	log.Println("Listening...")
-	if err := http.ListenAndServe(":" + port, nil); err != nil {
+	if err := http.ListenAndServe(":"+port, nil); err != nil {
 		log.Fatal(err)
 	}
 }
