@@ -263,7 +263,11 @@ func handlerUsers(w http.ResponseWriter, r *http.Request) {
 
 }
 func handlerItems(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Access-Control-Allow-Origin", "http://localhost:3000")
+	frontEndpoint := os.Getenv("FRONT_ENDPOINT")
+	if frontEndpoint == "" {
+		log.Fatal("環境変数 FRONT_ENDPOINT が設定されていません")
+	}
+	w.Header().Set("Access-Control-Allow-Origin", frontEndpoint)
 	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 	switch r.Method {
