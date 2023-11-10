@@ -29,7 +29,7 @@ type UserResForHTTPPost struct {
 }
 type ItemResForHTTPGet struct {
 	ItemID      int       `json:"itemId"`
-	UserID      int       `json:"userId,omitempty"`
+	UserID      string    `json:"userId,omitempty"`
 	CategoryID  int       `json:"categoryId,omitempty"`
 	ChapterID   int       `json:"chapterId,omitempty"`
 	Title       string    `json:"title"`
@@ -37,6 +37,15 @@ type ItemResForHTTPGet struct {
 	Content     string    `json:"content,omitempty"`
 	CreatedAt   time.Time `json:"createdAt"`
 	UpdatedAt   time.Time `json:"updatedAt"`
+}
+type ItemResForHTTPPost struct {
+	ItemID      int    `json:"itemId"`
+	UserID      string `json:"userId,omitempty"`
+	CategoryID  int    `json:"categoryId,omitempty"`
+	ChapterID   int    `json:"chapterId,omitempty"`
+	Title       string `json:"title"`
+	Description string `json:"description,omitempty"`
+	Content     string `json:"content,omitempty"`
 }
 
 // ① GoプログラムからMySQLへ接続
@@ -298,6 +307,45 @@ func handlerItems(w http.ResponseWriter, r *http.Request) {
 
 		// ②-4
 		bytes, err := json.Marshal(items)
+		if err != nil {
+			log.Printf("fail: json.Marshal, %v\n", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(bytes)
+	case http.MethodPost:
+		// requestの中身のjsonファイルを取得
+		var item ItemResForHTTPPost
+		if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
+			log.Printf("fail: json.NewDecoder, %v\n", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		// データベースへの挿入
+		tx, err := db.Begin()
+		if err != nil {
+			log.Printf("fail: db.Begin, %v\n", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		const query = "INSERT INTO Items (UserID, CategoryID, ChapterID, Title, Description, Content) VALUES (?, ?, ?, ?, ?, ?)"
+		if _, err := tx.Exec(query, item.UserID, item.CategoryID, item.ChapterID, item.Title, item.Description, item.Content); err != nil {
+			tx.Rollback()
+			log.Printf("fail: tx.Exec, %v\n", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		if err := tx.Commit(); err != nil {
+			log.Printf("fail: tx.Commit, %v\n", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		// 応答
+		w.WriteHeader(http.StatusOK)
+		bytes, err := json.Marshal(item.UserID)
 		if err != nil {
 			log.Printf("fail: json.Marshal, %v\n", err)
 			w.WriteHeader(http.StatusInternalServerError)
