@@ -47,6 +47,9 @@ type ItemResForHTTPPost struct {
 	Description string `json:"description,omitempty"`
 	Content     string `json:"content,omitempty"`
 }
+type ItemResForHTTPDelete struct {
+	ItemID int `json:"itemId"`
+}
 
 // ① GoプログラムからMySQLへ接続
 var db *sql.DB
@@ -268,7 +271,7 @@ func handlerItems(w http.ResponseWriter, r *http.Request) {
 		log.Fatal("環境変数 FRONT_ENDPOINT が設定されていません")
 	}
 	w.Header().Set("Access-Control-Allow-Origin", frontEndpoint)
-	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS")
+	w.Header().Set("Access-Control-Allow-Methods", "GET, OPTIONS, PUT, DELETE")
 	w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
 	switch r.Method {
 	case http.MethodOptions:
@@ -350,6 +353,99 @@ func handlerItems(w http.ResponseWriter, r *http.Request) {
 		// 応答
 		w.WriteHeader(http.StatusOK)
 		bytes, err := json.Marshal(item.UserID)
+		if err != nil {
+			log.Printf("fail: json.Marshal, %v\n", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(bytes)
+
+	case http.MethodPut:
+		// requestの中身のjsonファイルを取得
+		var item ItemResForHTTPPost
+		if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
+			log.Printf("fail: json.NewDecoder, %v\n", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		// データベースへの挿入
+		tx, err := db.Begin()
+		if err != nil {
+			log.Printf("fail: db.Begin, %v\n", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		const query = "UPDATE Items SET UserID = ?, CategoryID = ?, ChapterID = ?, Title = ?, Description = ?, Content = ? WHERE ItemID = ?"
+		if _, err := tx.Exec(query, item.UserID, item.CategoryID, item.ChapterID, item.Title, item.Description, item.Content, item.ItemID); err != nil {
+			tx.Rollback()
+			log.Printf("fail: tx.Exec, %v\n", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		if err := tx.Commit(); err != nil {
+			log.Printf("fail: tx.Commit, %v\n", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		// 応答
+		w.WriteHeader(http.StatusOK)
+		bytes, err := json.Marshal(item.UserID)
+		if err != nil {
+			log.Printf("fail: json.Marshal, %v\n", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		w.Write(bytes)
+
+	case http.MethodDelete:
+		// requestの中身のjsonファイルを取得
+		var item ItemResForHTTPDelete
+		if err := json.NewDecoder(r.Body).Decode(&item); err != nil {
+			log.Printf("fail: json.NewDecoder, %v\n", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		// データベースにアイテムが存在するか確認
+		var exists bool
+		err := db.QueryRow("SELECT EXISTS(SELECT 1 FROM Items WHERE ItemID = ?)", item.ItemID).Scan(&exists)
+		if err != nil {
+			log.Printf("fail: db.QueryRow, %v\n", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		if !exists {
+			log.Printf("fail: Item with ItemID %v does not exist\n", item.ItemID)
+			w.WriteHeader(http.StatusNotFound) // アイテムが見つからない場合は404 Not Foundを返す
+			return
+		}
+
+		// データベースへの挿入
+		tx, err := db.Begin()
+		if err != nil {
+			log.Printf("fail: db.Begin, %v\n", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		const query = "DELETE FROM Items WHERE ItemID = ?"
+		if _, err := tx.Exec(query, item.ItemID); err != nil {
+			tx.Rollback()
+			log.Printf("fail: tx.Exec, %v\n", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		if err := tx.Commit(); err != nil {
+			log.Printf("fail: tx.Commit, %v\n", err)
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+
+		// 応答
+		w.WriteHeader(http.StatusOK)
+		bytes, err := json.Marshal(item.ItemID)
 		if err != nil {
 			log.Printf("fail: json.Marshal, %v\n", err)
 			w.WriteHeader(http.StatusInternalServerError)
