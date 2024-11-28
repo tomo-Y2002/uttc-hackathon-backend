@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	// "github.com/joho/godotenv"
 	"github.com/oklog/ulid"
 	"log"
 	"math/rand"
@@ -32,6 +33,10 @@ type UserResForHTTPPost struct {
 var db *sql.DB
 
 func init() {
+	// err := godotenv.Load("../.env")
+	// if err != nil {
+	// 	log.Fatal("エラー")
+	// }
 	// ①-1
 	mysqlUser := os.Getenv("MYSQL_USER")
 	if mysqlUser == "" {
@@ -51,7 +56,9 @@ func init() {
 	}
 
 	// ①-2
-	_db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@(localhost:3306)/%s", mysqlUser, mysqlUserPwd, mysqlDatabase))
+	// dsn := fmt.Sprintf("%s:%s@tcp(%s:3306)/%s", mysqlUser, mysqlUserPwd, mysqlHost, mysqlDatabase)
+	dsn := fmt.Sprintf("%s:%s@%s/%s", mysqlUser, mysqlUserPwd, mysqlHost, mysqlDatabase)
+	_db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		log.Fatalf("fail: sql.Open, %v\n", err)
 	}
@@ -184,9 +191,15 @@ func main() {
 	// ③ Ctrl+CでHTTPサーバー停止時にDBをクローズする
 	closeDBWithSysCall()
 
+	// PORTで待ち受ける
+	port := os.Getenv("PORT")
+	if port == "" {
+		log.Fatal("環境変数 PORT が設定されていません")
+	}
+	
 	// 8000番ポートでリクエストを待ち受ける
 	log.Println("Listening...")
-	if err := http.ListenAndServe(":8000", nil); err != nil {
+	if err := http.ListenAndServe(":" + port, nil); err != nil {
 		log.Fatal(err)
 	}
 }
